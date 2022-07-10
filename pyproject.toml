@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "mylambdaproject"
+version = "0.1.0"
+description = ""
+authors = ["Jairo andres"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+requests = "^2.26.0"
+datadog-lambda = "^3.60.0"
+aws-xray-sdk = "^2.10.0"
+
+[tool.poetry.dev-dependencies]
+boto3 = "^1.20.23"
+black = "^21.12b0"
+pytest = "^6.2.5"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

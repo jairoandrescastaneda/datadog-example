@@ -1,0 +1,103 @@
+org: simetrik
+service: mylambdaprojectv223
+
+frameworkVersion: '3'
+
+variablesResolutionMode: 20210326
+custom:
+  stage: ${opt:stage, 'dev'}
+  DD_ENV: ${opt:stage, 'dev'}
+  DD_SERVICE: ${self:service}
+  datadog:
+    enableDDTracing: true
+    captureLambdaPayload: true
+    addExtension: true
+    apiKey: ${ssm:/observability/datadog/apikey}
+
+
+provider:
+  name: aws
+  runtime: python3.8
+  tracing:
+    lambda: true
+    apiGateway: true
+  lambdaHashingVersion: 20201221
+  region: us-east-1
+  environment:
+    API: ${file(./config.${opt:stage, 'dev'}.json):API}
+    TABLE_NAME: ${file(./config.${opt:stage, 'dev'}.json):TABLE_NAME}
+    TABLE_NAME_EVENT: ${file(./config.${opt:stage, 'dev'}.json):TABLE_NAME_EVENT}
+    enableDDTracing: true
+    DD_MERGE_XRAY_TRACES: true
+
+  iam:
+    role:
+      statements:
+
+        - Effect: Allow
+          Action:
+            - dynamodb:PutItem
+            - dynamodb:Query
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+          Resource: "*"
+        - Effect: Allow
+          Action:
+            - ses:SendEmail
+            - ses:SendRawEmail
+          Resource: "*"
+        - Effect: Allow
+          Action:
+            - xray:BatchGetTraces
+            - xray:GetTraceSummaries
+          Resource: "*"
+
+functions:
+  register:
+    handler: service.register.register
+    timeout: 30
+    events:
+      - httpApi:
+          path: /register
+          method: post
+  register-event:
+    handler: service.event_register.register
+    timeout: 10
+    events:
+      - stream:
+          type: dynamodb
+          arn: arn:aws:dynamodb:us-east-1:401982213069:table/dynamodb-test/stream/2022-07-10T04:21:27.346
+          batchSize: 1
+          startingPosition: LATEST
+          maximumRetryAttempts: 10
+
+  send-email:
+    handler: service.send_email.register
+    timeout: 10
+    events:
+      - stream:
+          type: dynamodb
+          arn: arn:aws:dynamodb:us-east-1:401982213069:table/dynamodb-test/stream/2022-07-10T04:21:27.346
+          batchSize: 1
+          startingPosition: LATEST
+          maximumRetryAttempts: 10
+
+
+
+package:
+  exclude:
+    - node_modules/**
+    - venv/**
+
+
+plugins:
+  - serverless-plugin-datadog
+  - serverless-python-requirements
+
+
+
+
+
+
+
+
